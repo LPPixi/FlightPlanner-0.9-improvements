@@ -73,7 +73,31 @@ namespace FlightPlanner.DataLayer
         /// <returns>Returns an object that stores the flight record.</returns>
         public Flight Read(int Id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (DbConnection databaseConnection = new SqlConnection(this.ConnectionString))
+                {
+                    IDbCommand selectFlightCommand = databaseConnection.CreateCommand();
+                    selectFlightCommand.CommandText = "select * from Flight where Flight.Id = Id";
+                
+                    databaseConnection.Open();
+                    IDataReader flightReader = selectFlightCommand.ExecuteReader();
+                
+                    Flight flight = new Flight();
+                    flight.Id = flightReader.GetInt32(0); // Column 0 of table Flight
+                    flight.Departure = flightReader.GetString(1);
+                    flight.Destination = flightReader.GetValue(2).ToString();
+                    flight.Duration = (int)flightReader["Duration"]; // Column 3 GetInt32(3)
+                    flight.DepartureDate = flightReader.GetDateTime(4);
+                    flight.PlaneId = flightReader.GetInt32(5);
+                    return flight;
+                }
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
 
