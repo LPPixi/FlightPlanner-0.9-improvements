@@ -124,7 +124,6 @@ namespace FlightPlanner.DataLayer
 
                 int rowCount = updateFlightCommand.ExecuteNonQuery();
                 return rowCount;
-
             }
         }
 

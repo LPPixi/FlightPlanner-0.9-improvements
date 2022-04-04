@@ -75,7 +75,24 @@ namespace FlightPlanner.DataLayer
         /// <returns>Returns an object that stores the flight record.</returns>
         public Booking Read(int Id)
         {
-            throw new NotImplementedException();
+            List<Booking> bookings = new List<Booking>();
+
+            using (DbConnection databaseConnection = new SqlConnection(this.ConnectionString))
+            {
+                IDbCommand bookingReadCommand = databaseConnection.CreateCommand();
+
+                databaseConnection.Open();
+
+                IDataReader bookingReader = bookingReadCommand.ExecuteReader();
+                Booking booking = null;
+                while (bookingReader.Read())
+                {
+                    booking = ParseRecord(bookingReader);
+                    bookings.Add(booking);
+                }
+
+                return booking;
+            }
         }
 
         public List<Booking> ReadByLastName(string lastName)
@@ -162,7 +179,6 @@ namespace FlightPlanner.DataLayer
                     throw new InvalidOperationException("The booking could not be created!");
                 }
             }
-            
         }
 
         public int TestStoredProcedure()
@@ -191,22 +207,37 @@ namespace FlightPlanner.DataLayer
                 int rowCount = command.ExecuteNonQuery();
                 return rowCount;
             }
-
         }
 
         public int Update(Booking booking)
         {
-            throw new NotImplementedException();
+            using (DbConnection databaseConnection = new SqlConnection(this.ConnectionString))
+            {
+                IDbCommand updateFlightCommand = databaseConnection.CreateCommand();
+                updateFlightCommand.CommandText =
+                    $"update Flight set FlightId = '{booking.FlightId}', " +
+                    $"CustomerId = '{booking.CustomerId}', " +
+                    $"Seats = {booking.Seats}, " +
+                    $"TravelClass = '{booking.TravelClass}', " +
+                    $"Price = {booking.Price};";
+
+                Console.WriteLine(updateFlightCommand.CommandText);
+
+                databaseConnection.Open();
+
+                var rowCount = updateFlightCommand.ExecuteNonQuery();
+                return rowCount;
+            }
         }
 
         public int Delete(Booking booking)
         {
-            throw new NotImplementedException();
+            return DeleteByFlightId(booking.FlightId);
         }
 
-        public int Delete(int FlightId, int CustomerId)
+        public int Delete(int FlightId)
         {
-            throw new NotImplementedException();
+            return DeleteByFlightId(FlightId);
         }
 
         // Delete
@@ -224,7 +255,5 @@ namespace FlightPlanner.DataLayer
                 return rowCount;
             }
         }
-  
     }
 }
-
