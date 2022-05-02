@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using System.Data;
 using System.Data.SqlClient;
 using System.Data.Common;
 
 namespace FlightPlanner.DataLayer
 {
-
     /// <summary>
     /// Data mapper design pattern: https://en.wikipedia.org/wiki/Data_mapper_pattern    
     /// </summary>
@@ -23,6 +21,20 @@ namespace FlightPlanner.DataLayer
             this.ConnectionString = connectionString;
         }
 
+        private Flight ParseRecord(IDataReader reader)
+        {
+            Flight flight = new Flight();
+            
+            flight.Id = reader.GetInt32(0); // Column 0 of table Flight
+            flight.Departure = reader.GetString(1);
+            flight.Destination = reader.GetValue(2).ToString();
+            flight.Duration = (int)reader["Duration"]; // Column 3 GetInt32(3)
+            flight.DepartureDate = reader.GetDateTime(4);
+            flight.PlaneId = reader.GetInt32(5);
+
+            return flight;
+        }
+        
         public List<Flight> ReadFlights()
         {
             // Ignore:
@@ -36,7 +48,7 @@ namespace FlightPlanner.DataLayer
             {
                 // erzeuge zuerst ein zur Sql Server Connection passendes Command, weise Select Befehl zu
                 IDbCommand selectFlightCommand = databaseConnection.CreateCommand();
-                
+
                 // Aus Performance Gründen alle Datensätze auf einmal lesen, nicht die Methode Read() dieser Klasse verwenden.
                 selectFlightCommand.CommandText = "select * from Flight";
 
@@ -46,7 +58,7 @@ namespace FlightPlanner.DataLayer
                 IDataReader flightReader = selectFlightCommand.ExecuteReader();
                 // gibt es nur einen Wert ist auch .ExecuteScalar möglich
                 // für update, insert, ...  ist aCommand.ExecuteNonQuery  zuständig
-                
+
                 //jetzt in der Schleife durch das Ergebnis des Select Befehls
                 while (flightReader.Read())
                 {
@@ -55,7 +67,7 @@ namespace FlightPlanner.DataLayer
                     flight.Id = flightReader.GetInt32(0); // Column 0 of table Flight
                     flight.Departure = flightReader.GetString(1);
                     flight.Destination = flightReader.GetValue(2).ToString();
-                    flight.Duration = (int)flightReader["Duration"]; // Column 3 GetInt32(3)
+                    flight.Duration = (int) flightReader["Duration"]; // Column 3 GetInt32(3)
                     flight.DepartureDate = flightReader.GetDateTime(4);
                     flight.PlaneId = flightReader.GetInt32(5);
 
@@ -66,6 +78,7 @@ namespace FlightPlanner.DataLayer
             }
             // finally
         }
+
         /// <summary>
         /// Read a single flight record.
         /// </summary>
@@ -73,30 +86,22 @@ namespace FlightPlanner.DataLayer
         /// <returns>Returns an object that stores the flight record.</returns>
         public Flight Read(int Id)
         {
-            try
+            using (DbConnection databaseConnection = new SqlConnection(this.ConnectionString))
             {
-                using (DbConnection databaseConnection = new SqlConnection(this.ConnectionString))
-                {
-                    IDbCommand selectFlightCommand = databaseConnection.CreateCommand();
-                    selectFlightCommand.CommandText = "select * from Flight where Flight.Id = Id";
-                
-                    databaseConnection.Open();
-                    IDataReader flightReader = selectFlightCommand.ExecuteReader();
-                
-                    Flight flight = new Flight();
-                    flight.Id = flightReader.GetInt32(0); // Column 0 of table Flight
-                    flight.Departure = flightReader.GetString(1);
-                    flight.Destination = flightReader.GetValue(2).ToString();
-                    flight.Duration = (int)flightReader["Duration"]; // Column 3 GetInt32(3)
-                    flight.DepartureDate = flightReader.GetDateTime(4);
-                    flight.PlaneId = flightReader.GetInt32(5);
-                    return flight;
-                }
-            }
-            catch (NullReferenceException e)
-            {
-                Console.WriteLine(e);
-                throw;
+                IDbCommand selectFlightCommand = databaseConnection.CreateCommand();
+                selectFlightCommand.CommandText = "select * from Flight where Flight.Id = Id";
+
+                databaseConnection.Open();
+                IDataReader flightReader = selectFlightCommand.ExecuteReader();
+
+                Flight flight = new Flight();
+                flight.Id = flightReader.GetInt32(0); // Column 0 of table Flight
+                flight.Departure = flightReader.GetString(1);
+                flight.Destination = flightReader.GetValue(2).ToString();
+                flight.Duration = (int) flightReader["Duration"]; // Column 3 GetInt32(3)
+                flight.DepartureDate = flightReader.GetDateTime(4);
+                flight.PlaneId = flightReader.GetInt32(5);
+                return flight;
             }
         }
 
@@ -111,9 +116,9 @@ namespace FlightPlanner.DataLayer
                 IDbCommand createFlightCommand = databaseConnection.CreateCommand();
                 // INSERT INTO Flight VALUES(203, 'Berlin', 'Paris', 120, '20180202', 21);
                 createFlightCommand.CommandText =
-                   $"insert into Flight values ({flight.Id}, '{flight.Departure}', '{flight.Destination}', " +
-                   $"{flight.Duration}, '{flight.DepartureDate.ToString("s", System.Globalization.CultureInfo.InvariantCulture)}', " + 
-                   $"{flight.PlaneId});";
+                    $"insert into Flight values ({flight.Id}, '{flight.Departure}', '{flight.Destination}', " +
+                    $"{flight.Duration}, '{flight.DepartureDate.ToString("s", System.Globalization.CultureInfo.InvariantCulture)}', " +
+                    $"{flight.PlaneId});";
 
                 // Console.WriteLine NICHT an dieser Stelle in einem professionellen Programm verwenden, 
                 // Methode soll auch bei GUI Anwendungen funktionieren 
@@ -122,7 +127,6 @@ namespace FlightPlanner.DataLayer
 
                 int rowCount = createFlightCommand.ExecuteNonQuery();
                 return rowCount;
-
             }
         }
 
@@ -132,18 +136,18 @@ namespace FlightPlanner.DataLayer
             {
                 // erzeuge zuerst ein zur Sql Server Connection passendes Command, weise Select Befehl zu
                 IDbCommand updateFlightCommand = databaseConnection.CreateCommand();
-                updateFlightCommand.CommandText = 
-                   $"update Flight set Departure = '{flight.Departure}', " +
-                   $"Destination = '{flight.Destination}', " +
-                   $"Duration = {flight.Duration}, " +
-                   $"DepartureDate = '{flight.DepartureDate.ToString("s", System.Globalization.CultureInfo.InvariantCulture)}', " +
-                   $"PlaneId = {flight.PlaneId} " +
-                   $"where Flight.Id = {flight.Id};";
+                updateFlightCommand.CommandText =
+                    $"update Flight set Departure = '{flight.Departure}', " +
+                    $"Destination = '{flight.Destination}', " +
+                    $"Duration = {flight.Duration}, " +
+                    $"DepartureDate = '{flight.DepartureDate.ToString("s", System.Globalization.CultureInfo.InvariantCulture)}', " +
+                    $"PlaneId = {flight.PlaneId} " +
+                    $"where Flight.Id = {flight.Id};";
 
                 // Console.WriteLine NICHT an dieser Stelle in einem professionellen Programm verwenden, 
                 // Methode soll auch bei GUI Anwendungen funktionieren
                 Console.WriteLine(updateFlightCommand.CommandText);
-                
+
                 databaseConnection.Open();
 
                 int rowCount = updateFlightCommand.ExecuteNonQuery();
@@ -163,7 +167,7 @@ namespace FlightPlanner.DataLayer
                 // erzeuge zuerst ein zur Sql Server Connection passendes Command, weise Select Befehl zu
                 IDbCommand deleteFlightCommand = databaseConnection.CreateCommand();
                 deleteFlightCommand.CommandText =
-                   $"delete from Flight where Flight.Id = {Id};";
+                    $"delete from Flight where Flight.Id = {Id};";
 
                 // Console.WriteLine NICHT an dieser Stelle in einem professionellen Programm verwenden, 
                 // Methode soll auch bei GUI Anwendungen funktionieren
@@ -174,8 +178,6 @@ namespace FlightPlanner.DataLayer
                 int rowCount = deleteFlightCommand.ExecuteNonQuery();
                 return rowCount;
             }
-            
         }
-
     }
 }
